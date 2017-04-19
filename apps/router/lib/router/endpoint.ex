@@ -9,9 +9,9 @@ defmodule Porto.Router.Endpoint do
   plug :match
   plug :dispatch
 
-  match "/cms" do
+  match "/git/*glob" do
     conn
-    |> Http.forward_call("https://github.com")
+    |> Http.forward_call("https://github.com/#{glob}", "/git")
     |> halt
   end
 
