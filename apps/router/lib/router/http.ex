@@ -1,4 +1,4 @@
-defmodule Porto.Router.Http do
+defmodule Router.Http do
   import Plug.Conn
 
   @options [proxy: System.get_env("http_proxy"), follow_redirect: false, max_redirect: 5]
@@ -7,7 +7,10 @@ defmodule Porto.Router.Http do
 
   def forward_call(conn, url, root \\ "/") do
     {:ok, body, conn} = read_body(conn)
-    case HTTPoison.request(method(conn), url, body, [], @options) do
+    headers = []
+    cookies = []
+    # cookies = [hackney: [cookie: "cookie1=111; cookie2=222"]]
+    case HTTPoison.request(method(conn), url, body, headers, @options ++ cookies) do
       {:ok, %HTTPoison.Response{body: body, headers: headers, status_code: status_code}} ->
         # IO.inspect headers
         conn
@@ -34,7 +37,12 @@ defmodule Porto.Router.Http do
     if Enum.member?(@header_blacklist, String.downcase(key)) do
       conn
     else
-      put_resp_header(conn, String.downcase(key), value)
+      new_value = case String.downcase(key) do
+        "location" -> String.replace(value, "https://maps.google.com", "http://localhost:4001/maps") # TODO: generic replacement
+        "set-cookie" -> value # TODO: replace cookies
+        _ -> value
+      end
+      put_resp_header(conn, String.downcase(key), new_value)
     end
   end
 
